@@ -1,6 +1,6 @@
 # Cascades
 
-*This is not an official Google product*
+*This is not an officially supported Google product*
 
 Python library which enables complex compositions of language models such as
 scratchpads, chain of thought, tool use, selection-inference, and more.

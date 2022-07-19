@@ -16,11 +16,18 @@
 
 # A new PyPI release will be pushed everytime `__version__` is increased
 # When changing this, also update the CHANGELOG.md
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
-from cascades._src.distributions.base import *
+from cascades._src.distributions.base import UniformCategorical
 from cascades._src.distributions.choose import Choose
-from cascades._src.distributions.strings import *
-
-from cascades._src.handlers import *
+from cascades._src.distributions.strings import get_default_lm
+from cascades._src.distributions.strings import mock_lm
+from cascades._src.distributions.strings import String
+from cascades._src.handlers import factor
+from cascades._src.handlers import log
+from cascades._src.handlers import observe
+from cascades._src.handlers import param
+from cascades._src.handlers import reject
+from cascades._src.handlers import rejection_sample
+from cascades._src.handlers import sample
 from cascades._src.sampler import Sampler

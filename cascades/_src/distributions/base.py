@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Distributions.
-
-TODO(ddohan): Separate distributions_test.py
-"""
+"""Basic distribution types and helpers."""
 from concurrent import futures
 import dataclasses
 import functools

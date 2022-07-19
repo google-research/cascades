@@ -15,12 +15,11 @@
 """Choose k items from a set."""
 
 import dataclasses
-from typing import Any, Tuple, List, Union
-
-import jax
-import jax.numpy as jnp
+from typing import Any, List, Tuple, Union
 
 from cascades._src.distributions import base
+import jax
+import jax.numpy as jnp
 
 
 def _sample_log_probs(rng, log_probs, k=None):

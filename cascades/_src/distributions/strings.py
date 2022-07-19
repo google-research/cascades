@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""String distributions.
-
-TODO(ddohan): Reorganize distributions into own directory.
-"""
+"""String distributions."""
 
 from concurrent import futures
 import dataclasses
@@ -28,12 +25,12 @@ from cascades._src.distributions import base as dists
 DEFAULT_LM_CLIENT = dict(default=None)
 
 
-def set_default(lm):
+def set_default_lm(lm):
   """Set the default language model client."""
   DEFAULT_LM_CLIENT['default'] = lm
 
 
-def get_default():
+def get_default_lm():
   """Return a default language model client."""
   lm = DEFAULT_LM_CLIENT.get('default')
   if not lm:
@@ -137,7 +134,7 @@ class String(dists.Distribution):
   timeout: int = 60
 
   def _get_lm(self):
-    return self.lm or get_default()
+    return self.lm or get_default_lm()
 
   def sample(self, rng):
     rng = dists.get_rng(rng)
