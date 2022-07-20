@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Basic distribution types and helpers."""
+
 from concurrent import futures
 import dataclasses
 import functools
@@ -91,11 +92,9 @@ class RandomSample:
 
 # TODO(ddohan): Consider moving get_rng to separate file.
 def get_rng(seed):
-  """Get jax prng key from seed. Does nothing is seed is a PRNGKey."""
+  """Get jax prng key from seed. Does nothing if seed is already a PRNGKey."""
   if isinstance(seed, int):
     return jax.random.PRNGKey(seed)
-  # TODO(ddohan): What's the right type for jax seed?
-  # if isinstance(seed, chex.PRNGKey):
 
   # Seed is already a jax.random.PRNGKey, so we just pass it through.
   return seed
