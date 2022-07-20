@@ -1,0 +1,6 @@
+theme: jekyll-theme-slate
+
+# Name of website
+title: Language Model Cascades
+social-network-links:
+  github: google-research/cascades
