@@ -4,3 +4,6 @@ remote_theme: vfvong/jekyll-theme-tao
 title: Language Model Cascades
 social-network-links:
   github: google-research/cascades
+
+plugins:
+  - jekyll-remote-theme
