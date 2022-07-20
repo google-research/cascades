@@ -1,4 +1,4 @@
-theme: jekyll-theme-slate
+remote_theme: vfvong/jekyll-theme-tao
 
 # Name of website
 title: Language Model Cascades
