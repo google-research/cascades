@@ -85,7 +85,7 @@ class GPT(dists.Distribution):
     total_logprob = sum(result['logprobs']['token_logprobs'][start:end])
     if raw:
       return (total_logprob, result)
-    return dists.RandomSample(score=total_logprob, value=completion)
+    return dists.RandomSample(log_p=total_logprob, value=completion)
 
   def log_prob(self, value, raw=False):
     """Get log prob of completion.
