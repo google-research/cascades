@@ -7,3 +7,5 @@ social-network-links:
 
 plugins:
   - jekyll-remote-theme
+
+theme: jekyll-theme-slate
