@@ -16,7 +16,7 @@ Large Language Models (LLMs) like GPT-3, LaMDA, and PaLM continue to benefit fro
 
 We coin the term [Language Model Cascades](https://arxiv.org/abs/2207.10342) to describe a probabilistic programming language (PPL) and framework for expressing computer programs that chain together (or cascade) language models interacting with themselves, each other, and with external tools. We show that many recent papers can be expressed in this framework, which makes it easy to sample from cascaded programs and performance Bayesian optimization and inference strategies, like SMC, rejection sampling, and variational inference.
 
-![examples of LLM cascades](https://github.com/google-research/cascades/blob/web/_data/cascades.png)
+![examples of LLM cascades](https://github.com/google-research/cascades/raw/web/_data/cascades.png)
 
 ## Probabilistic Programming with LLMs
 
@@ -28,8 +28,8 @@ Probabilistic programs are different from traditional programming languages beca
 
 Cascades is unique in providing a probabilistic programming framework over the space of strings. Language models take in and emit text written in language. Cascades lets us perform various kinds of conditional and unconditional inference over this space.
 
-## Implementatiion
+## Implementation
 
 The core library implementation is available on Github at [google-research/cascades](https://github.com/google-research/cascades). Examples of common cascades, using publicly available GPT models, will be released in coming weeks.
 
-![The Cascades paper](https://github.com/google-research/cascades/blob/web/_data/cascades-paper.png)
+![The Cascades paper](https://github.com/google-research/cascades/raw/web/_data/cascades-paper.png)
