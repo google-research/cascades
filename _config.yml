@@ -1,9 +1,6 @@
-remote_theme: vfvong/jekyll-theme-tao
+theme: jekyll-theme-slate
 
 # Name of website
 title: Language Model Cascades
 social-network-links:
   github: google-research/cascades
-
-plugins:
-  - jekyll-remote-theme
