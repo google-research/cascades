@@ -176,11 +176,13 @@ class Effect:
   name: Optional[Text] = None
 
   # Results of sampling or scoring.
-  value: Optional[Any] = None
-  score: Optional[float] = None
+  value: Optional[Any] = dataclasses.field(repr=True, default=None)
+  score: Optional[float] = dataclasses.field(repr=True, default=None)
 
   # Callable, generally used for sampling and scoring.
-  fn: Optional[Union[Callable, Distribution]] = None  # pylint: disable=g-bare-generic
+  fn: Optional[Union[Callable, Distribution]] = dataclasses.field(  # pylint: disable=g-bare-generic
+      repr=False,
+      default=None)
   args: Optional[List[Any]] = dataclasses.field(default_factory=list)
   kwargs: Optional[Dict[Text, Any]] = dataclasses.field(default_factory=dict)
 
@@ -190,6 +192,16 @@ class Effect:
   replayed: bool = False
 
   metadata: Optional[Any] = None
+
+  def __repr__(self):
+    kws = []
+    for k, v in self.__dict__.items():
+      if not self.__dataclass_fields__[k].repr:
+        continue
+      v = str(v)[:64]
+      s = f'{k}={v!r}'
+      kws.append(s)
+    return '{}({})'.format(type(self).__name__, ',\n'.join(kws))
 
 
 @dataclasses.dataclass
