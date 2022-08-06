@@ -12,7 +12,7 @@ This allow to:
 
 To release a new version (e.g. from `1.0.0` -> `2.0.0`):
 
-* Create a new `# [2.0.0] - YYY-MM-DD` header and add the current
+* Create a new `# [2.0.0] - YYYY-MM-DD` header and add the current
   `[Unreleased]` notes.
 * At the end of the file:
   * Define the new link url:
