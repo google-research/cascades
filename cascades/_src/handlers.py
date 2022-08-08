@@ -146,7 +146,7 @@ def reject(reason, name=None):
       fn=dist,
       value=dists.FactorSentinel,
       score=-math.inf,
-      name=name or 'reject')
+      name=name or reason)
 
 
 def param(name=None, dist=None, value=None):
@@ -159,9 +159,14 @@ def _yielded_value_to_effect(value):
   """Convert a value to an effect."""
   if isinstance(value, Effect):
     return value
-  elif isinstance(value, (Distribution, dists.np_dists.Distribution)):
+  elif isinstance(value, dists.np_dists.Distribution):
+    name = str(value.__class__)
+    if hasattr(value, 'name'):
+      name = value.name
     # pylint does not handle dataclass inheritance properly.
-    return Sample(fn=value)  # pylint: disable=unexpected-keyword-arg
+    return Sample(fn=value, name=name)  # pylint: disable=unexpected-keyword-arg
+  elif isinstance(value, Distribution):
+    return Sample(fn=value, name=value.name)  # pylint: disable=unexpected-keyword-arg
   else:
     raise ValueError('Unknown effect type %s' % str(value))
 
@@ -176,15 +181,16 @@ class Effect:
   name: Optional[Text] = None
 
   # Results of sampling or scoring.
-  value: Optional[Any] = dataclasses.field(repr=True, default=None)
   score: Optional[float] = dataclasses.field(repr=True, default=None)
+  value: Optional[Any] = dataclasses.field(repr=True, default=None)
 
   # Callable, generally used for sampling and scoring.
   fn: Optional[Union[Callable, Distribution]] = dataclasses.field(  # pylint: disable=g-bare-generic
-      repr=False,
-      default=None)
-  args: Optional[List[Any]] = dataclasses.field(default_factory=list)
-  kwargs: Optional[Dict[Text, Any]] = dataclasses.field(default_factory=dict)
+      repr=False, default=None)
+  args: Optional[List[Any]] = dataclasses.field(
+      repr=False, default_factory=list)
+  kwargs: Optional[Dict[Text, Any]] = dataclasses.field(
+      repr=False, default_factory=dict)
 
   # If True, then the generator should be halted
   # generally used when likelihood becomes infinite.
@@ -394,6 +400,9 @@ class Record(EffectHandler):
 
   def __repr__(self):
     kvs = [f'  {k}: {v}' for k, v in self.trace.items()]
+    if self.done:
+      kvs.append(f'  return: {self.return_value}')
+
     kvs = '\n'.join(kvs)
     return f'Record(\n{kvs}\n)'
 

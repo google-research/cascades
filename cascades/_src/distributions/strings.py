@@ -73,6 +73,7 @@ def iterate_until(rng,
                   until: Text = '\n',
                   reject_if_missing=True,
                   timeout=60,
+                  include_until=False,
                   rescore=True):
   """Sample from language model up to `k` times.
 
@@ -86,6 +87,8 @@ def iterate_until(rng,
     until: Sample until this token is found.
     reject_if_missing: If True, then reject the trace if `until` is not found.
     timeout: Maximum time to wait for a generation.
+    include_until: If True, include the `until` token in the returned
+      generation.
     rescore: If true, then rescores the generation after truncation, as an
       `Observe`
 
@@ -114,6 +117,8 @@ def iterate_until(rng,
           score = 0.0
         # preclip = clipped
         clipped = clipped[:-len(until)]
+        if include_until:
+          clipped += until
         # print(f'`{preclip}` -> `{clipped}`')
         return dists.RandomSample(log_p=score, value=clipped)
   if until and reject_if_missing:
@@ -130,8 +135,10 @@ class String(dists.Distribution):
   prompt: Text = ''
   k: int = 2
   until: Text = '\n'
+  include_until: bool = False
   lm: Any = None
   timeout: int = 60
+  reject_if_missing: bool = True
 
   def _get_lm(self):
     return self.lm or get_default_lm()
@@ -142,9 +149,11 @@ class String(dists.Distribution):
         rng=rng,
         lm=self._get_lm(),
         prompt=self.prompt,
+        reject_if_missing=self.reject_if_missing,
         until=self.until,
         k=self.k,
-        timeout=self.timeout)
+        timeout=self.timeout,
+        include_until=self.include_until)
     return value
 
   def log_prob(self, value):
