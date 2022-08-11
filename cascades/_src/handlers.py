@@ -70,7 +70,7 @@ def forward_sample(fn, seed, *args, **kwargs):
   # gen_fn = ApplyContext(lambda: fn(*args, **kwargs))
   gen_fn = lambda: fn(*args, **kwargs)
   # TODO(ddohan): Add in ParamHandler
-  handler_fn = compose_handlers([Record, StopOnReject, Observer, Sampler])
+  handler_fn = compose_handlers([Record, StopOnReject, Sampler, Observer])
   forward_sample_handler: Record = handler_fn(Seed(seed=seed, gen_fn=gen_fn))  # pytype: disable=annotation-type-mismatch
   result_with_metadata = forward_sample_handler.run_with_intermediates(
       verbose=False)
@@ -143,10 +143,7 @@ def reject(reason, name=None):
   """Add -inf term to likelihood of current trace."""
   dist = dists.Factor(reason=reason, factor=-math.inf)
   yield Reject(
-      fn=dist,
-      value=dists.FactorSentinel,
-      score=-math.inf,
-      name=name or reason)
+      fn=dist, value=dists.FactorSentinel, score=-math.inf, name=name or reason)
 
 
 def param(name=None, dist=None, value=None):
@@ -338,7 +335,9 @@ class EffectHandler:
           effect = self.process(effect)
           if effect is None:
             raise ValueError(f'Did not return effect from {self}')
-          yield effect
+          returned_effect = yield effect
+          if returned_effect is not None:
+            effect = returned_effect
 
           # TODO(ddohan): postprocess will be applied from outside in
           # Do we want to somehow apply it inside out as well?
@@ -466,12 +465,31 @@ class Sampler(EffectHandler):
 class Observer(EffectHandler):
   """Compute score of Observe statements."""
 
-  def __init__(self, gen_fn=None, await_timeout=None, rescore=True):
+  def __init__(self,
+               gen_fn=None,
+               await_timeout=None,
+               rescore=True,
+               observed=None):
     super().__init__(gen_fn=gen_fn)
     self._await_timeout = await_timeout
     self._rescore = rescore
+    self._observed = observed
 
   def process(self, effect):
+    if self._observed and effect.name in self._observed:
+      expected = self._observed[effect.name]
+      if isinstance(effect, Log):
+        if effect.value != expected:
+          effect.metadata = dict(expected=expected)
+          effect.score = -math.inf
+      elif isinstance(effect, Observe):
+        effect.value = expected
+        effect.score = None
+      elif isinstance(effect, Sample):
+        effect = Observe(**effect.__dict__)
+        effect.value = expected
+        effect.score = None
+
     if isinstance(effect, Observe):
       if effect.value is None:
         raise ValueError(f'Observe with a None value: {effect}')
@@ -496,7 +514,7 @@ class StopOnReject(EffectHandler):
   """Mark that tracing should stop in event of inf likelihood."""
 
   def process(self, effect):
-    if (isinstance(effect, Observe) and effect.score is not None):
+    if effect.score is not None:
       should_stop = jax.numpy.any(jax.numpy.isinf(effect.score))
       if jax.device_get(should_stop):
         effect.should_stop = True

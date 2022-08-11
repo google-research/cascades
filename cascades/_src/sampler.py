@@ -14,10 +14,44 @@
 
 """Sample values from a model."""
 from functools import partial  # pylint: disable=g-importing-member
-from typing import Any
+from typing import Any, Dict, Text, Optional
 
 from cascades._src import handlers as h
 import jax
+
+
+def model(fn):
+  """Decorator which adds sampling methods around a given simulator/model."""
+
+  def sample(*args, seed=0, observe=None, **kwargs):
+    sampler = Sampler(model=partial(fn, *args, **kwargs), observe=observe)
+    return sampler.reify(seed=seed)
+
+  def sample_parallel(pool, *args, n=1, seed=0, observe=None, **kwargs):
+    sampler = Sampler(model=partial(fn, *args, **kwargs), observe=observe)
+    tracers = sampler.parallel(pool=pool, seed=seed, n=n)
+    return tracers
+
+  def map(pool, seed, kwargs_list):  # pylint: disable=redefined-builtin
+    """Map model sampling across a list of inputs."""
+    ts = []
+    for kwargs in kwargs_list:
+      if 'observe' in kwargs:
+        observe = kwargs['observe']
+        del kwargs['observe']
+      else:
+        observe = None
+      sampler = Sampler(model=partial(fn, **kwargs), observe=observe)
+      t = sampler.parallel(pool=pool, seed=seed, n=1)[0]
+      t.kwargs = kwargs
+      ts.append(t)
+    return ts
+
+  fn.sample = sample
+  fn.sample_parallel = sample_parallel
+  fn.map = map
+  return fn
+
 
 # Inference
 
@@ -28,6 +62,7 @@ def build_tracer(
     seed: Any,  # h.RNGKey,
     trace=(),
     reparam_fn=None,
+    observed=None,
     rescore=False) -> h.Record:
   """Make a tracer which samples values and records to a tape.
 
@@ -37,6 +72,7 @@ def build_tracer(
     trace: Trace of site name -> Effect to replay values.
     reparam_fn: Partial Reparam handler which can be used to reparameterize
       distributions.
+    observed: Dictionary of name to observed value.
     rescore: Whether to rescore the observed samples.
 
   Returns:
@@ -51,14 +87,15 @@ def build_tracer(
       h.Record,
       # Sample/observe distributions & await futures
       h.StopOnReject,
-      partial(h.Observer, rescore=rescore),
       h.Sampler,
+      partial(h.Observer, rescore=rescore, observed=observed),
       # Replace the known values when generator is rerun
-      partial(h.Replay,
-              # Thread RNG through effect.
-              trace=trace,
-              replay_scores=True,
-              assert_all_used=True),
+      partial(
+          h.Replay,
+          # Thread RNG through effect.
+          trace=trace,
+          replay_scores=True,
+          assert_all_used=True),
       partial(h.Seed, seed=seed),
   ]
   handler_fn = h.compose_handlers(handler_stack)
@@ -73,29 +110,29 @@ class Sampler:
 
   def __init__(
       self,
-      model,
+      model,  # pylint:disable=redefined-outer-name
       # examples: Optional[Iterable[Dict[Text, Any]]] = None,
-      # observe: Optional[Dict[Text, Any]] = None,
+      observe: Optional[Dict[Text, Any]] = None,
       # future_prompt=False,
       rescore=True,
       reparam_fn=None,
   ):
     self._model = model
     # self._examples = examples or ()
-    # self._observed = observe or dict()
+    self._observed = observe or dict()
     # self._future_prompt = future_prompt
     self._rescore = rescore
     self._reparam_fn = reparam_fn
 
   def build_tracer(self, seed=0):
     """Instantiate a tracer for given seed. Does not evalute concrete values."""
-    # TODO(ddohan): Handle observed variables, with and without future prompting
     tracer = build_tracer(
         self._model,
         seed=seed,
         # examples=self._examples,
-        # observed=self._observed,
+        observed=self._observed,
         # future_prompt=self._future_prompt,
+        trace=(),
         rescore=self._rescore,
         reparam_fn=self._reparam_fn)
     tracer.done = False
@@ -119,7 +156,9 @@ class Sampler:
 
 
 def reify(tracer: h.Record, verbose=False):
-  """Run tracer and return the result. Makes implicit values explicit.
+  """Run tracer and return the result.
+
+  Makes implicit values explicit.
 
   Modifies `tracer` in place.
 
