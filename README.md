@@ -7,3 +7,5 @@ scratchpads, chain of thought, tool use, selection-inference, and more.
 
 Implemented as a universal trace-based probabilistic programming library
 embedded in Python.
+
+Code to complement paper: https://arxiv.org/abs/2207.10342.
