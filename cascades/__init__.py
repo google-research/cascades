@@ -16,9 +16,10 @@
 
 # A new PyPI release will be pushed everytime `__version__` is increased
 # When changing this, also update the CHANGELOG.md
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 from cascades._src.distributions.base import UniformCategorical
+from cascades._src.distributions.gpt import GPT
 from cascades._src.distributions.choose import Choose
 from cascades._src.distributions.strings import get_default_lm
 from cascades._src.distributions.strings import mock_lm
