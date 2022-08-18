@@ -24,7 +24,9 @@ from cascades._src.distributions import base as dists
 import jax
 import openai
 
-openai.api_key = os.getenv('OPENAI_API_KEY')
+api_key = os.getenv('OPENAI_API_KEY')
+if api_key:
+  openai.api_key = api_key
 
 
 # TODO(ddohan): Persist cache to disk
@@ -42,7 +44,7 @@ class GPT(dists.Distribution):
 
   stop: Optional[Iterable[Text]] = ('\n',)
 
-  engine = 'davinci-codex'
+  engine: str = 'davinci-codex'
   temperature: float = 0.7
   max_tokens: int = 128
   top_p: float = .95
