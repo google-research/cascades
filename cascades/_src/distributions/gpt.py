@@ -21,6 +21,7 @@ from typing import Iterable, Optional, Text
 import uuid
 
 from cascades._src.distributions import base as dists
+import jax
 import openai
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -60,8 +61,11 @@ class GPT(dists.Distribution):
     """
     if rng is None:
       rng = uuid.uuid4().hex
+    elif isinstance(rng, jax.numpy.DeviceArray):
+      rng = jax.random.randint(rng, (), 0, 1_000_000_000)
+      rng = int(rng)
     elif not isinstance(rng, int):
-      raise ValueError('RNG must be an integer or Jax key.')
+      raise ValueError(f'RNG must be an integer or Jax key. Was {rng}')
     result = cached_completion(
         rng=rng,
         model=self.engine,
