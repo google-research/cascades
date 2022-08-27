@@ -13,8 +13,6 @@
 # limitations under the License.
 
 """Basic tests for Scratchpads."""
-import functools
-
 from absl.testing import absltest
 import cascades as cc
 from cascades.examples import scratchpad
@@ -33,14 +31,12 @@ class ScratchpadTest(absltest.TestCase):
     mock_lm = cc.mock_lm(
         response=': Half of 48 is 24. 24 + 48 is 72.\nAnswer: 72\n===')
 
-    program = functools.partial(
-        scratchpad.sample_with_prompts,
+    model = scratchpad.sample_with_prompts(
         lm=mock_lm,
         target=target,
         examples=examples,
         n_prompts=3)
-    sampler = cc.Sampler(model=program)  # pylint: disable=unnecessary-lambda
-    trace = sampler.reify(seed=0)
+    trace = model.sample(seed=0)
     self.assertEqual('72', trace.return_value)
     self.assertEqual('test/123', trace['problem_id'].value)
 

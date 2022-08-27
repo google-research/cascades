@@ -20,42 +20,6 @@ from cascades._src import handlers as h
 import jax
 
 
-def model(fn):
-  """Decorator which adds sampling methods around a given simulator/model."""
-
-  def sample(*args, seed=0, observe=None, **kwargs):
-    sampler = Sampler(model=partial(fn, *args, **kwargs), observe=observe)
-    return sampler.reify(seed=seed)
-
-  def sample_parallel(pool, *args, n=1, seed=0, observe=None, **kwargs):
-    sampler = Sampler(model=partial(fn, *args, **kwargs), observe=observe)
-    tracers = sampler.parallel(pool=pool, seed=seed, n=n)
-    return tracers
-
-  def map(pool, seed, kwargs_list):  # pylint: disable=redefined-builtin
-    """Map model sampling across a list of inputs."""
-    ts = []
-    for kwargs in kwargs_list:
-      if 'observe' in kwargs:
-        observe = kwargs['observe']
-        del kwargs['observe']
-      else:
-        observe = None
-      sampler = Sampler(model=partial(fn, **kwargs), observe=observe)
-      t = sampler.parallel(pool=pool, seed=seed, n=1)[0]
-      t.kwargs = kwargs
-      ts.append(t)
-    return ts
-
-  fn.sample = sample
-  fn.sample_parallel = sample_parallel
-  fn.map = map
-  return fn
-
-
-# Inference
-
-
 # TODO(ddohan): Add goal conditioning (future prompting) back in.
 def build_tracer(
     fn,

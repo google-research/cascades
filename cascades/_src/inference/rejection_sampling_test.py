@@ -32,27 +32,48 @@ def truncated_2step_gaussian(cutoff):
 
 class RejectionSamplingTest(absltest.TestCase):
 
+  def test_sample_with_reject_on_log(self):
+    """Check sampling until a trace with a finite likelihood."""
+    @cc.model
+    def binomial(k, p=0.5):
+      total = 0
+      for i in range(k):
+        flip = yield cc.sample(name=f'flip/{i}',
+                               dist=np_dists.Bernoulli(probs=p))
+        total += flip
+      return total
+
+    expected_total = 3
+    s = rejection_sampling.RejectionSampling(
+        model=binomial,
+        max_attempts=100,
+        k=5,
+        p=0.5,
+        observe=dict(return_value=expected_total))
+    for seed in range(10):
+      y = s.sample(seed=seed)
+      self.assertEqual(expected_total, y.return_value)
+
   def test_sample_with_reject(self):
     """Check sampling until a trace with a finite likelihood."""
     cutoff = 0.3
     s = rejection_sampling.RejectionSampling(
-        model=truncated_2step_gaussian,
-        max_attempts=100,
-        cutoff=cutoff)
+        model=truncated_2step_gaussian, max_attempts=100, cutoff=cutoff)
     for seed in range(10):
       y = s.sample(seed=seed)
-      self.assertLess(abs(y.output), cutoff)
+      self.assertLess(abs(y.return_value), cutoff)
 
   def test_sample_with_reject_conditioned(self):
     """Check that we can condition specific values."""
     cutoff = 0.5
     s = rejection_sampling.RejectionSampling(
-        model=truncated_2step_gaussian, max_attempts=100,
+        model=truncated_2step_gaussian,
+        max_attempts=100,
         observe={'step 1': 2.0},
         cutoff=cutoff)
     # Jumps to 2 then to < 0.5
     y = s.sample(seed=0)
-    self.assertLess(y.output, cutoff)
+    self.assertLess(y.return_value, cutoff)
     self.assertEqual(2.0, y.trace['step 1'].value)
 
 

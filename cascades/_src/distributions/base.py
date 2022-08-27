@@ -17,6 +17,7 @@
 from concurrent import futures
 import dataclasses
 import functools
+import math
 from typing import Any, Optional, Tuple, Union
 
 import jax
@@ -190,6 +191,23 @@ class Factor(Distribution):
   def score(self, value):
     del value
     return self.factor
+
+
+@dataclasses.dataclass(eq=True, frozen=True)
+class Constant(Distribution):
+  """Return a constant, with fixed log_prob factor."""
+  value: Any = None
+  factor: float = 0.0  # Constant to use as score
+
+  def sample(self, rng):
+    del rng
+    return RandomSample(value=self.value, log_p=self.factor)
+
+  def score(self, value):
+    if value == self.value:
+      return self.factor
+    else:
+      return -math.inf
 
 
 ## Discrete distributions

@@ -111,6 +111,7 @@ def fewshot_prompt(examples: Iterable[ReasonIO],
   return prompt
 
 
+@cc.model
 def sample_with_prompts(target: ReasonIO,
                         examples: List[ReasonIO],
                         n_prompts: Optional[int] = None,

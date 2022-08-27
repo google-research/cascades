@@ -14,4 +14,5 @@
 
 """Inference algorithms."""
 
+from cascades._src.inference.base import model
 from cascades._src.inference.rejection_sampling import RejectionSampling

@@ -26,6 +26,56 @@ import jax
 Distribution = dists.Distribution
 RandomSample = dists.RandomSample
 
+
+class BaseModel:
+  """Base class for Cascade models."""
+
+  def __init__(self,
+               model,
+               *args,
+               observe: Optional[Dict[str, Any]] = None,
+               name: Optional[str] = None,
+               **kwargs):  # pylint: disable=redefined-outer-name
+    """Wrap callable generator as a sampleable model.
+
+    Args:
+      model: Callable to wrap.
+      *args: Arguments passed as inputs to model.
+      observe: Values to condition when sampling.
+      name: Optional name used for scoping when nesting models.
+      **kwargs: Keyword arguments passed as inputs to model.
+    """
+    self._model = model
+    self._name = name
+    self._args = args
+    self._kwargs = kwargs
+    self._observe = observe
+
+  def to_generator(self):
+    """Create a generator from model.
+
+    Wraps effects in a NameScope, which automatically adds the model name to
+    and effect addresses.
+
+    TODO(ddohan): Add an Observer if `self._observe` is set as well.
+
+    Returns:
+      A generator which traces through the model.
+    """
+    # Wrap into a name scope to get unique names
+    # Call the model to get a generator
+    gen = self._model(
+        *self._args,
+        **self._kwargs)
+    if self._name:
+      gen = NameScope(gen_fn=gen, scope=self._name)()
+    return gen
+
+  def __repr__(self):
+    model_name = self._model.__name__
+    return f'<{self.__class__.__name__}[{model_name}]>'
+
+
 ## Methods to run a generator.
 
 
@@ -93,12 +143,14 @@ def rejection_sample(fn, seed, max_attempts, *args, **kwargs):
 
 
 ## Helper methods to create effects within a model.
-# TODO(ddohan): Move these to a separate file.
 
 
-def log(value, name=None):
-  """Record a value into a trace."""
-  yield Log(value=value, name=name or 'log')
+def log(value, name=None, factor=0.0):  # pylint: disable=redefined-outer-name
+  """Record a value into a trace with given log_prob factor."""
+  yield Log(
+      value=value,
+      fn=dists.Constant(value=value, factor=factor),
+      name=name or 'log')
 
 
 def sample(dist=None, obs=None, name=None):
@@ -208,15 +260,6 @@ class Effect:
 
 
 @dataclasses.dataclass
-class Log(Effect):
-  """Log information to the trace."""
-  value: Any = None
-
-  # Unique name for site which yielded this effect.
-  name: Optional[Text] = None
-
-
-@dataclasses.dataclass
 class Sample(Effect):
   """A distribution together with its sampled value."""
   pass
@@ -226,6 +269,15 @@ class Sample(Effect):
 class Observe(Effect):
   """A distribution together with its observed value."""
   pass
+
+
+@dataclasses.dataclass
+class Log(Observe):
+  """Log information to the trace. May be used for conditioning model."""
+  value: Any = None
+
+  # Unique name for site which yielded this effect.
+  name: Optional[Text] = None
 
 
 @dataclasses.dataclass
@@ -320,6 +372,11 @@ class EffectHandler:
         yielded_value = gen.send(value_to_inject)
 
         _log(f'Yielded value: {yielded_value}')
+        if isinstance(yielded_value, BaseModel):
+          # If the yielded value is a cascades model, we need to
+          # trace into it.
+          yielded_value = yielded_value.to_generator()
+
         if isinstance(yielded_value, types.GeneratorType):
 
           # Recursively trace through yielded generator.
@@ -331,7 +388,7 @@ class EffectHandler:
         else:
           effect = _yielded_value_to_effect(yielded_value)
 
-          # Process & postproces modify the effect in place
+          # Process & postprocess modify the effect in place
           effect = self.process(effect)
           if effect is None:
             raise ValueError(f'Did not return effect from {self}')
@@ -383,11 +440,13 @@ class Record(EffectHandler):
   def __init__(self, gen_fn=None):
     super().__init__(gen_fn=gen_fn)
     self.trace = collections.OrderedDict()
+    self.return_value = None
     self.keys = []
     self.observed_likelihood = 0.0
     self.unobserved_likelihood = 0.0
-    self.return_value = None
     self.done = False
+    self.inputs = None
+    self.metadata = None
 
   def __getitem__(self, key):
     """Get variable from trace by name."""
@@ -399,9 +458,6 @@ class Record(EffectHandler):
 
   def __repr__(self):
     kvs = [f'  {k}: {v}' for k, v in self.trace.items()]
-    if self.done:
-      kvs.append(f'  return: {self.return_value}')
-
     kvs = '\n'.join(kvs)
     return f'Record(\n{kvs}\n)'
 
@@ -477,12 +533,9 @@ class Observer(EffectHandler):
 
   def process(self, effect):
     if self._observed and effect.name in self._observed:
+      # Inject observed value into the effect, for scoring below.
       expected = self._observed[effect.name]
-      if isinstance(effect, Log):
-        if effect.value != expected:
-          effect.metadata = dict(expected=expected)
-          effect.score = -math.inf
-      elif isinstance(effect, Observe):
+      if isinstance(effect, Observe):
         effect.value = expected
         effect.score = None
       elif isinstance(effect, Sample):
@@ -518,6 +571,25 @@ class StopOnReject(EffectHandler):
       should_stop = jax.numpy.any(jax.numpy.isinf(effect.score))
       if jax.device_get(should_stop):
         effect.should_stop = True
+    return effect
+
+
+class NameScope(EffectHandler):
+  """Prepend scope to variable name."""
+
+  def __init__(self, gen_fn=None, scope=None):
+    super().__init__(gen_fn=gen_fn)
+    self.scope = scope
+
+  def __repr__(self):
+    return f'<NameScope {self.gen_fn}>'
+
+  def process(self, effect):
+    name = effect.name
+    if name is None:
+      name = effect.fn.__class__.__name__
+    name = f'{self.scope}/{name}'
+    effect.name = name
     return effect
 
 

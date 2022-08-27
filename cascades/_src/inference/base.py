@@ -14,44 +14,110 @@
 
 """Base types for inference."""
 
-import dataclasses
-from typing import Any, Dict, Text, Optional
+from concurrent import futures
+import functools
+from typing import Optional
+
+from cascades._src import handlers
+from cascades._src import sampler as sampler_lib
+import jax
 
 
-@dataclasses.dataclass
-class InferenceResult:
-  metadata: Any = None
-  output: Any = None
-  trace: Any = None
-  inputs: Any = None
+def wrap_with_return_logging(fn):
+  """Wrap a model function such that the return value is logged."""
+  @functools.wraps(fn)
+  def wrapped_fn(*args, **kwargs):
+    ret_val = yield from fn(*args, **kwargs)
+    yield handlers.log(value=ret_val, name='return_value')
+    return ret_val
+  return wrapped_fn
 
-  def __getitem__(self, k):
-    return self.trace[k]
+
+def model(fn):
+  """Decorator which wraps model around a function which creates a generator.
+
+  The output of sampling from the model is included in the trace as
+  `return_value`.
+
+  ```
+  @model
+  def sampling_fn(k=3, p=0.6):
+    output = yield Binomial(k=k, p=p)
+    return output
+
+  # Use default arguments.
+  sampling_fn.sample(seed=1)
+
+  # Apply nondefault argument, then sample.
+  sampling_fn(k=5, p=0.9).sample(seed=1)
+  ```
+
+  Args:
+    fn: Generator function to wrap into a sampleable model.
+
+  Returns:
+    Function wrapped into a Model. May directly call `.sample(seed)`, or apply
+    new arguments then sample: `ret_model(*args, **kwargs).sample(seed)`
+  """
+  partial_model = functools.partial(SampledModel, wrap_with_return_logging(fn))
+
+  def map_kwargs(pool, seed, kwargs_list):
+    """Map model sampling across a list of inputs."""
+    tracers = []
+    for kwargs in kwargs_list:
+      configured_model = partial_model(**kwargs)
+      tracer = configured_model.sample(pool=pool, seed=seed)
+      tracer.kwargs = kwargs
+      tracers.append(tracer)
+    return tracers
+
+  def sample(seed: int = 0, pool: Optional[futures.ThreadPoolExecutor] = None):
+    return partial_model().sample(seed=seed, pool=pool)
+
+  def sample_parallel(pool: futures.ThreadPoolExecutor,
+                      seed: int = 0,
+                      n: int = 1):
+    return partial_model().sample_parallel(seed=seed, pool=pool, n=n)
+
+  partial_model.map = map_kwargs
+  partial_model.sample = sample
+  partial_model.sample_parallel = sample_parallel
+  partial_model.__name__ = fn.__name__
+  return partial_model
 
 
-class InferenceAlgorithm:
-  """Base class for inference methods."""
+class SampledModel(handlers.BaseModel):
+  """Base class for sampling from cascade models."""
 
-  def __init__(self,
-               model,
-               *args,
-               observe: Optional[Dict[Text, Any]] = None,
-               **kwargs):
-    """Run inference on model called with given inputs.
+  def sample(
+      self,
+      seed: int = 0,
+      pool: Optional[futures.ThreadPoolExecutor] = None) -> handlers.Record:
+    """Sample a trace from the model.
 
     Args:
-      model: Model to run sampling on.
-      *args: Arguments passed to the model.
-      observe: Values to condition the model on.
-      **kwargs: Keyword args passed to the model.
+      seed: Random seed.
+      pool: Optional threadpool for parallel execution.
 
     Returns:
-      A sample from the model.
+      a Record tracer.
     """
-    self.model = model
-    self.args = args
-    self.kwargs = kwargs
-    self.observe = observe
+    sampler = sampler_lib.Sampler(
+        model=functools.partial(self._model, *self._args, **self._kwargs),
+        observe=self._observe)
+    if pool:
+      tracer = sampler.build_tracer(seed)
+      f = pool.submit(sampler_lib.reify, tracer=tracer)
+      tracer.future = f
+    else:
+      tracer = sampler.reify(seed=seed)
+    return tracer
 
-  def sample(self):
-    raise NotImplementedError
+  def sample_parallel(self,
+                      pool: futures.ThreadPoolExecutor,
+                      seed: int = 0,
+                      n: int = 1):
+    """Sample `n` tracers in parallel."""
+    seeds = jax.random.split(jax.random.PRNGKey(seed), n)
+    tracers = [self.sample(seed=seed, pool=pool) for seed in seeds]
+    return tracers
