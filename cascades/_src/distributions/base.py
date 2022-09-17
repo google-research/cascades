@@ -20,9 +20,12 @@ import functools
 import math
 from typing import Any, Optional, Tuple, Union
 
+import cachetools
 import jax
 import jax.numpy as jnp
+import numpy as np
 from numpyro import distributions as np_dists
+import shortuuid
 
 DEFAULT_TIMEOUT = 60
 
@@ -234,3 +237,64 @@ class UniformCategorical(Distribution):
 
   def support(self):
     return self.options
+
+
+# Higher order distributons
+
+
+def _rng_hash(rng):
+  """Hash an rng key."""
+  if isinstance(rng, int):
+    return hash(rng)
+  else:
+    return hash(tuple(np.asarray(rng)))
+
+
+def _mem_sample_key(self, rng):
+  """Cache key for Mem distribution."""
+  rng = _rng_hash(rng)
+  h = hash((rng, self))
+  return h
+
+
+def _mem_score_key(self, value):
+  """Cache key for Mem distribution."""
+  h = hash((value, self))
+  return h
+
+
+# TODO(ddohan): Consider sharing cache across instances.
+@dataclasses.dataclass(frozen=True, eq=True)
+class Mem(Distribution):
+  """Add a cache to a distribution so that repeated calls are memoized."""
+  dist: Optional[Distribution] = dataclasses.field(repr=True, default=None)
+
+  # Mem should not be equal unless they are really the same
+  # generate a unique UID to ensure this property.
+  uid: str = dataclasses.field(
+      repr=True, default_factory=lambda: shortuuid.uuid()[:8])
+
+  @cachetools.cached(cache=cachetools.LRUCache(maxsize=100_000),
+                     key=_mem_sample_key)
+  def sample(self, rng):
+    return self.dist.sample(rng=rng)
+
+  @cachetools.cached(cache=cachetools.LRUCache(maxsize=100_000),
+                     key=_mem_score_key)
+  def score(self, value):
+    return self.dist.score(value)
+
+
+@dataclasses.dataclass(frozen=True, eq=True)
+class Lambda(Distribution):
+  """Wrap a function as distribution."""
+  fn: Any = dataclasses.field(
+      default=None, hash=None)  # TODO(ddohan): Add type of callable.
+
+  def sample(self, rng):
+    del rng
+    value = self.fn()
+    return RandomSample(value=value, dist=self, log_p=None)
+
+  def score(self):
+    raise NotImplementedError('Scoring from Lambda is not available.')
