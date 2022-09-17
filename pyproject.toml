@@ -14,7 +14,7 @@ classifiers = [
 keywords = []
 
 # pip dependencies of the project
-dependencies = ["jax[cpu]", "numpyro", "immutabledict", "openai"]
+dependencies = ["cachetools", "shortuuid", "jax[cpu]", "numpyro", "immutabledict", "openai"]
 
 # This is set automatically by flit using `cascades.__version__`
 dynamic = ["version"]
