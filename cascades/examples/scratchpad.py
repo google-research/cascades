@@ -155,4 +155,4 @@ def sample_with_prompts(target: ReasonIO,
     answer = nums[-1]
   else:
     yield cc.reject(reason=f'No answer found in `{prediction}`')
-  return answer
+  return answer  # pytype: disable=name-error  # py310-upgrade
