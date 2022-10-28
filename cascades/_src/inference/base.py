@@ -16,11 +16,38 @@
 
 from concurrent import futures
 import functools
-from typing import Optional
+from typing import Any, Dict, Optional, Sequence
 
 from cascades._src import handlers
+from cascades._src import interpreter
 from cascades._src import sampler as sampler_lib
 import jax
+
+
+class Inferencer():
+  """Base class for inference algorithms."""
+
+  _model: Any  # Really Callable[...,Generator[X, Y, Z]] but not yet.
+  _args: Sequence[Any]
+  _kwargs: Dict[str, Any]
+
+  def __init__(self, model, *args, **kwargs):  # pylint: disable=redefined-outer-name
+    self._model = model
+    self._args = args
+    self._kwargs = kwargs
+    self._reset_debug_info()
+
+  def _reset_debug_info(self):
+    self._tapes = []
+    self.debug_info = dict()
+
+  def record_sample(self, samples, tracer, **kwargs):
+    datum = interpreter.tape_to_dict(tracer.tape, tracer.stats)
+    samples.append_row(datum)
+    samples.update_row(self._kwargs)
+    samples.update_row(dict(**kwargs))
+    self._tapes.append(tracer.tape)
+    self.debug_info['tapes'] = self._tapes
 
 
 def wrap_with_return_logging(fn):

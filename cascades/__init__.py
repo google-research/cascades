@@ -35,6 +35,5 @@ from cascades._src.handlers import rejection_sample
 from cascades._src.handlers import sample
 
 from cascades._src.inference import model
-from cascades._src.inference import RejectionSampling
 
 from cascades._src.interpreter import Interpreter
