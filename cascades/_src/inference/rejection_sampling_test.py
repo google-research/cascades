@@ -19,7 +19,6 @@ from cascades._src.inference import rejection_sampling
 from numpyro import distributions as np_dists
 
 
-@cc.model
 def truncated_2step_gaussian(cutoff):
   """Two step random walk with rejection criteria."""
   step1 = yield cc.sample(name='step 1', dist=np_dists.Normal(loc=0, scale=1))
@@ -27,54 +26,55 @@ def truncated_2step_gaussian(cutoff):
   output = step1 + step2
   if abs(output) >= cutoff:
     yield cc.reject('Out of bounds')
+  yield cc.log(output, 'output')
   return output
+
+
+def binomial(k, p=0.5):
+  total = 0
+  for i in range(k):
+    flip = yield cc.sample(name=f'flip{i}', dist=np_dists.Bernoulli(probs=p))
+    total += flip
+  yield cc.log(total, 'total')
+  return flip
 
 
 class RejectionSamplingTest(absltest.TestCase):
 
-  def test_sample_with_reject_on_log(self):
-    """Check sampling until a trace with a finite likelihood."""
-    @cc.model
-    def binomial(k, p=0.5):
-      total = 0
-      for i in range(k):
-        flip = yield cc.sample(name=f'flip/{i}',
-                               dist=np_dists.Bernoulli(probs=p))
-        total += flip
-      return total
+  def test_rejection_sample(self):
+    """Check rejection sampling on a binomial distribution."""
+    k = 3
+    num_samples = 500
 
-    expected_total = 3
     s = rejection_sampling.RejectionSampling(
-        model=binomial,
-        max_attempts=100,
-        k=5,
-        p=0.5,
-        observe=dict(return_value=expected_total))
-    for seed in range(10):
-      y = s.sample(seed=seed)
-      self.assertEqual(expected_total, y.return_value)
+        model=binomial, k=k, p=0.5, max_attempts=100, observed=dict(total=1))
+    samples = s.sample(num_samples=num_samples, seed=0)
 
-  def test_sample_with_reject(self):
-    """Check sampling until a trace with a finite likelihood."""
-    cutoff = 0.3
-    s = rejection_sampling.RejectionSampling(
-        model=truncated_2step_gaussian, max_attempts=100, cutoff=cutoff)
-    for seed in range(10):
-      y = s.sample(seed=seed)
-      self.assertLess(abs(y.return_value), cutoff)
+    # Check that the total is always what was observed
+    total_sampled = samples.get_column('total')
+    for value in total_sampled:
+      self.assertEqual(1, value)
 
-  def test_sample_with_reject_conditioned(self):
-    """Check that we can condition specific values."""
+    # Check that each flip has the correct distribution (should be 0.333)
+    total = 0.0
+    for flip_id in range(k):
+      column = samples.get_column(f'flip{flip_id}')
+      total += sum(column)
+    self.assertAlmostEqual(1.0 / k, total / (k * num_samples), places=1)
+
+  def test_sample_with_manual_reject(self):
+    """Check sampling handles cc.reject events."""
     cutoff = 0.5
-    s = rejection_sampling.RejectionSampling(
-        model=truncated_2step_gaussian,
-        max_attempts=100,
-        observe={'step 1': 2.0},
-        cutoff=cutoff)
-    # Jumps to 2 then to < 0.5
-    y = s.sample(seed=0)
-    self.assertLess(y.return_value, cutoff)
-    self.assertEqual(2.0, y.trace['step 1'].value)
+    sampler = rejection_sampling.RejectionSampling(
+        model=truncated_2step_gaussian, max_attempts=100, cutoff=cutoff,
+        observed=dict())
+    samples = sampler.sample(num_samples=10, seed=0)
+    result = samples.get_column('output')
+
+    for y in result:
+      # The cutoff is small enough that rejection should always succeed.
+      self.assertIsNotNone(y)
+      self.assertLess(abs(y), cutoff)
 
 
 if __name__ == '__main__':
