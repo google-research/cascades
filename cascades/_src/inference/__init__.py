@@ -16,4 +16,5 @@
 
 from cascades._src.inference.base import model
 from cascades._src.inference.forward_sampling import ForwardSampling
+from cascades._src.inference.likelihood_weighting import LikelihoodWeighting
 from cascades._src.inference.rejection_sampling import RejectionSampling
