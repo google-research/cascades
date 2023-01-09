@@ -32,6 +32,7 @@ dev = [
     "pytest-xdist",
     "pylint>=2.6.0",
     "yapf",
+    "absl-py",
 ]
 
 [build-system]
