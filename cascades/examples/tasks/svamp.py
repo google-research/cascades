@@ -123,9 +123,10 @@ def solve_svamp_task(task, train_set, lm=None, check_correct=False):
 
   # Extract equations between {{ }}
   eq = _text_extract_brackets(line)
-  eq = eq.strip()
   if eq is None:
     yield cc.reject(reason='No equation proposed', name='no_equation')
+    return
+  eq = eq.strip()  # pylint: disable=attribute-error
   eq = eq.replace('{', '').replace('}', '')
 
   # Evaluate the arithmetic using a calculator

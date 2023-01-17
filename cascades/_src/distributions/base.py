@@ -69,9 +69,14 @@ class Distribution:
     raise NotImplementedError
 
 
+@dataclasses.dataclass(eq=True, frozen=True)
+class Unbatched(Distribution):
+  """Marker that a sample has been unbatched from an underlying distribution."""
+  dist: Any = None
+
+
 # TODO(ddohan): Can it both be frozen & do post_init casting?
-# @dataclass(frozen=True, eq=True)
-@dataclasses.dataclass(eq=True)
+@dataclasses.dataclass(frozen=True, eq=True)
 class RandomSample:
   """A value with an optional score (log_p) and source distribution."""
   # stand in for kw_only in py3.10
@@ -84,6 +89,18 @@ class RandomSample:
   def __post_init__(self):
     if self.capture is not None:
       raise ValueError('Use kwargs for all arguments.')
+
+  def unbatch_(self):
+    """Unpack a RandomSample of a list to a list of RandomSamples."""
+    unbatched = []
+    for (log_p, value) in zip(self.log_p, self.value):
+      sample = RandomSample(
+          capture=None,
+          log_p=log_p,
+          value=value,
+          dist=Unbatched(dist=self.dist))
+      unbatched.append(sample)
+    return unbatched
 
   @property
   def score(self):
