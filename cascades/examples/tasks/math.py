@@ -13,12 +13,24 @@
 # limitations under the License.
 
 """Loaders for MATH dataset."""
+import functools
 import json
 
 open_file = open
 MATH_PATH = None
 
 
+def get_category(math_ds,
+                 category='Prealgebra',
+                 split='train',
+                 length_sorted=False):
+  tasks = [x for x in math_ds[split] if x['type'] == category]
+  if length_sorted:
+    tasks = sorted(tasks, key=lambda x: len(x['problem']) + len(x['solution']))
+  return tasks
+
+
+@functools.lru_cache()
 def load_dataset(base_dir=MATH_PATH):
   """Load MATH raw data from disk.
 
