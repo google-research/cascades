@@ -73,6 +73,7 @@ class Distribution:
 class Unbatched(Distribution):
   """Marker that a sample has been unbatched from an underlying distribution."""
   dist: Any = None
+  idx: Optional[int] = None  #  Index of the item within the batch.
 
 
 # TODO(ddohan): Can it both be frozen & do post_init casting?

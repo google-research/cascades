@@ -48,13 +48,13 @@ def load_dataset(base_dir=GSM8K_PATH):
   with open_file(train_path) as f:
     for i, line in enumerate(f):
       example = _load_line(line)
-      example['id'] = f'train/{i}'
+      example['uid'] = f'train/{i}'
       train_xs.append(example)
 
   with open_file(test_path) as f:
     for i, line in enumerate(f):
       example = _load_line(line)
-      example['id'] = f'test/{i}'
+      example['uid'] = f'test/{i}'
       test_xs.append(example)
 
   return dict(train=train_xs, test=test_xs)
