@@ -18,7 +18,7 @@ from concurrent import futures
 import dataclasses
 import functools
 import math
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Optional, Tuple, Union
 
 import cachetools
 import jax
@@ -306,13 +306,16 @@ class Mem(Distribution):
 @dataclasses.dataclass(frozen=True, eq=True)
 class Lambda(Distribution):
   """Wrap a function as distribution."""
-  fn: Any = dataclasses.field(
-      default=None, hash=None)  # TODO(ddohan): Add type of callable.
+  fn: Any = dataclasses.field(default=None, hash=None)
+  args: Optional[Iterable[Any]] = None
+  kwargs: Optional[Dict[str, Any]] = None
 
   def sample(self, rng):
     del rng
-    value = self.fn()
-    return RandomSample(value=value, dist=self, log_p=None)
+    args = self.args or []
+    kwargs = self.kwargs or {}
+    value = self.fn(*args, **kwargs)
+    return RandomSample(value=value, log_p=0.0)
 
   def score(self):
     raise NotImplementedError('Scoring from Lambda is not available.')
