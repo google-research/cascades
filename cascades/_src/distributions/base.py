@@ -83,7 +83,7 @@ class RandomSample:
   # stand in for kw_only in py3.10
   capture: Any = dataclasses.field(repr=False, default=None)
 
-  log_p: Optional[Union[float, jax.numpy.DeviceArray]] = None
+  log_p: Optional[Union[float, jax.Array]] = None
   value: Any = None
   dist: Optional[Union[Distribution, functools.partial]] = None
 

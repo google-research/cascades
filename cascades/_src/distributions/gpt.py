@@ -63,7 +63,7 @@ class GPT(dists.Distribution):
     """
     if rng is None:
       rng = uuid.uuid4().hex
-    elif isinstance(rng, jax.numpy.DeviceArray):
+    elif isinstance(rng, jax.Array):
       rng = jax.random.randint(rng, (), 0, 1_000_000_000)
       rng = int(rng)
     elif not isinstance(rng, int):
