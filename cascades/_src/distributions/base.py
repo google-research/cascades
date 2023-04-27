@@ -1,4 +1,4 @@
-# Copyright 2022 The cascades Authors.
+# Copyright 2023 The cascades Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -317,5 +317,5 @@ class Lambda(Distribution):
     value = self.fn(*args, **kwargs)
     return RandomSample(value=value, log_p=0.0)
 
-  def score(self):
+  def score(self):  # pytype: disable=signature-mismatch  # overriding-parameter-count-checks
     raise NotImplementedError('Scoring from Lambda is not available.')
