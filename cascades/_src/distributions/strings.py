@@ -1,4 +1,4 @@
-# Copyright 2025 The cascades Authors.
+# Copyright 2026 The cascades Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ def removeafter(text: Text, token: Text = '==='):
     return None
 
 
-def mock_lm(response: Text) ->...:
+def mock_lm(response: Text):
   """Return Distribution class which will return a fixed response."""
 
   @dataclasses.dataclass(frozen=True)
