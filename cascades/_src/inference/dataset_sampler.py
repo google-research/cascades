@@ -31,7 +31,7 @@ class DatasetSampler(base.Inferencer):
   def sample(self, dataset, num_samples=1, seed=0):
     rng = dists.get_rng(seed)
     samples = interpreter.Samples()
-    self.debug_info = []
+    self.debug_info = []  # pyrefly: ignore[bad-assignment]
     for inputs in tqdm.tqdm(dataset):
       rng, subrng = jax.random.split(rng)
       these_kwargs = dict(self._kwargs)
@@ -39,5 +39,5 @@ class DatasetSampler(base.Inferencer):
       inferencer = self._inferencer_class(**these_kwargs)
       these_samples = inferencer.sample(seed=subrng, num_samples=num_samples)
       samples.update(these_samples)
-      self.debug_info.append(inferencer.debug_info)
+      self.debug_info.append(inferencer.debug_info)  # pyrefly: ignore[missing-attribute]
     return samples

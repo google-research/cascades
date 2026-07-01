@@ -478,7 +478,7 @@ class Record(EffectHandler):
       if effect.score is not None:
         self.observed_likelihood += effect.score
     elif isinstance(effect, Sample):
-      self.unobserved_likelihood += effect.score
+      self.unobserved_likelihood += effect.score  # pyrefly: ignore[unsupported-operation]
     return effect
 
 
@@ -493,7 +493,7 @@ class Seed(EffectHandler):
       self.rng = seed
 
   def process(self, effect):
-    self.rng, subrng = jax.random.split(self.rng)
+    self.rng, subrng = jax.random.split(self.rng)  # pyrefly: ignore[bad-argument-type]
     effect.kwargs['rng'] = subrng
     return effect
 
@@ -510,9 +510,9 @@ class Sampler(EffectHandler):
       if effect.value is None:
         random_sample = dists.sample_distribution(
             effect.fn,
-            *effect.args,
+            *effect.args,  # pyrefly: ignore[not-iterable]
             await_timeout=self._await_timeout,
-            **effect.kwargs)
+            **effect.kwargs)  # pyrefly: ignore[bad-unpacking]
         effect.value = random_sample.value
         effect.score = random_sample.log_p
     return effect
@@ -553,7 +553,7 @@ class Observer(EffectHandler):
 
       if should_rescore:
         score = dists.score_distribution(
-            effect.fn,
+            effect.fn,  # pyrefly: ignore[bad-argument-type]
             effect.value,
             await_timeout=self._await_timeout,
         )

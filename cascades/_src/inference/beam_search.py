@@ -69,7 +69,7 @@ def clone(fn, trace: Trace, seed, param_handler=None):
       h.Sampler,
       h.Observer,
   ]
-  handler_fn = h.compose_handlers(handler_stack)
+  handler_fn = h.compose_handlers(handler_stack)  # pyrefly: ignore[bad-argument-type]
   handlers: h.Record = handler_fn(
       # Replace the known values when generator is rerun
       h.Replay(
@@ -185,7 +185,7 @@ def score_fn_last(tracer):
   if not isinstance(most_recent, h.Observe):
     raise ValueError(
         'last_score_fn should be called immediately after an Observe')
-  return -most_recent.score
+  return -most_recent.score  # pyrefly: ignore[unsupported-operation]
 
 
 def score_fn_all(tracer):

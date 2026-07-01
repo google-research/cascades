@@ -94,7 +94,7 @@ class RandomSample:
   def unbatch_(self):
     """Unpack a RandomSample of a list to a list of RandomSamples."""
     unbatched = []
-    for (log_p, value) in zip(self.log_p, self.value):
+    for (log_p, value) in zip(self.log_p, self.value):  # pyrefly: ignore[bad-argument-type]
       sample = RandomSample(
           capture=None,
           log_p=log_p,
@@ -174,7 +174,7 @@ def sample_distribution(fn, *args, await_timeout=None, **kwargs):
     del kwargs['rng']
     value = fn.sample(*args, **kwargs)
     log_p = fn.log_prob(value)
-    return RandomSample(value=value, log_p=log_p)
+    return RandomSample(value=value, log_p=log_p)  # pyrefly: ignore[bad-argument-type]
   elif hasattr(fn, 'sample') and callable(fn.sample):
     fn = fn.sample
   random_sample = fn(*args, **kwargs)
@@ -240,7 +240,7 @@ class UniformCategorical(Distribution):
   options: Tuple[Any] = tuple()  # pytype: disable=annotation-type-mismatch
 
   def sample(self, rng=None) -> RandomSample:
-    idx = jax.random.randint(rng, (), 0, len(self.options))
+    idx = jax.random.randint(rng, (), 0, len(self.options))  # pyrefly: ignore[bad-argument-type]
     idx = int(idx)
     sample = self.options[idx]
     log_p = -jnp.log(len(self.options))
@@ -295,12 +295,12 @@ class Mem(Distribution):
   @cachetools.cached(cache=cachetools.LRUCache(maxsize=100_000),
                      key=_mem_sample_key)
   def sample(self, rng):
-    return self.dist.sample(rng=rng)
+    return self.dist.sample(rng=rng)  # pyrefly: ignore[missing-attribute]
 
   @cachetools.cached(cache=cachetools.LRUCache(maxsize=100_000),
                      key=_mem_score_key)
   def score(self, value):
-    return self.dist.score(value)
+    return self.dist.score(value)  # pyrefly: ignore[missing-attribute]
 
 
 @dataclasses.dataclass(frozen=True, eq=True)

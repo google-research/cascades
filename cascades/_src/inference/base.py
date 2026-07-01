@@ -94,7 +94,7 @@ def model(fn):
     for kwargs in kwargs_list:
       configured_model = partial_model(**kwargs)
       tracer = configured_model.sample(pool=pool, seed=seed)
-      tracer.kwargs = kwargs
+      tracer.kwargs = kwargs  # pyrefly: ignore[missing-attribute]
       tracers.append(tracer)
     return tracers
 
@@ -106,10 +106,10 @@ def model(fn):
                       n: int = 1):
     return partial_model().sample_parallel(seed=seed, pool=pool, n=n)
 
-  partial_model.map = map_kwargs
-  partial_model.sample = sample
-  partial_model.sample_parallel = sample_parallel
-  partial_model.__name__ = fn.__name__
+  partial_model.map = map_kwargs  # pyrefly: ignore[missing-attribute]
+  partial_model.sample = sample  # pyrefly: ignore[missing-attribute]
+  partial_model.sample_parallel = sample_parallel  # pyrefly: ignore[missing-attribute]
+  partial_model.__name__ = fn.__name__  # pyrefly: ignore[missing-attribute]
   return partial_model
 
 
