@@ -256,9 +256,9 @@ class Interpreter(handlers.EffectHandler):
           if not effect.fn:
             raise ValueError(f'Param fn cannot be None: `{effect}`')
           random_sample = handlers.dists.sample_distribution(
-              fn=effect.fn, *effect.args, **effect.kwargs)
+              fn=effect.fn, *effect.args, **effect.kwargs)  # pyrefly: ignore[bad-unpacking, not-iterable]
           effect.value = random_sample.value
-          effect.log_p = random_sample.log_p
+          effect.log_p = random_sample.log_p  # pyrefly: ignore[missing-attribute]
         self._param_store[effect.name] = effect.value
     elif isinstance(effect, handlers.Sample):
       if self._inference_hook:

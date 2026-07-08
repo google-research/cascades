@@ -62,7 +62,7 @@ def build_tracer(
           assert_all_used=True),
       partial(h.Seed, seed=seed),
   ]
-  handler_fn = h.compose_handlers(handler_stack)
+  handler_fn = h.compose_handlers(handler_stack)  # pyrefly: ignore[bad-argument-type]
   if reparam_fn is None:
     reparam_fn = lambda x: x
   record_handler: h.Record = handler_fn(reparam_fn(gen_fn))
@@ -144,7 +144,7 @@ def reify(tracer: h.Record, verbose=False):
       if e.args is not None and len(e.args):
         return_value = e.args[0]
         if verbose:
-          print(f'Return value: {eff}')
+          print(f'Return value: {eff}')  # pyrefly: ignore[unbound-name]
       break
   tracer.done = True
   tracer.return_value = return_value

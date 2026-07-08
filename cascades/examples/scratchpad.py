@@ -70,7 +70,7 @@ def load_chain_examples() -> Tuple[ReasonIO]:
   """Load the standard chain of thought prompts used in the paper."""
   parts = PROMPTS.split('Q:')[1:]
   chain_prompts = tuple(_process_part(x) for x in parts)
-  return chain_prompts
+  return chain_prompts  # pyrefly: ignore[bad-return]
 
 
 def load_gsm8k(base_dir=gsm8k.GSM8K_PATH):
