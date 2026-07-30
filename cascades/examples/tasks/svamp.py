@@ -137,7 +137,7 @@ def solve_svamp_task(task, train_set, lm=None, check_correct=False):
 
   if check_correct:
     # Did we get the right answer?
-    correct = _score_prediction(model_answer=calculator_output,
+    correct = _score_prediction(model_answer=calculator_output,  # pyrefly: ignore[bad-argument-type]
                                 true_answer=task['Answer'])
     yield cc.log(correct, 'is_correct')
     if not correct:

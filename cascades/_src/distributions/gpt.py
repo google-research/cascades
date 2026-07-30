@@ -33,7 +33,7 @@ if api_key:
 @functools.lru_cache()
 def cached_completion(rng=None, **kwargs):
   del rng
-  return openai.Completion.create(**kwargs)
+  return openai.Completion.create(**kwargs)  # pyrefly: ignore[missing-attribute]
 
 
 @dataclasses.dataclass(eq=True, frozen=True)

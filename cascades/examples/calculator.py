@@ -52,9 +52,9 @@ def _eval_arithmetic(node):
   if isinstance(node, ast.Num):  # <number>
     return node.n
   elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
-    return operators[type(node.op)](_eval_arithmetic(node.left),
-                                    _eval_arithmetic(node.right))
+    return operators[type(node.op)](_eval_arithmetic(node.left),  # pyrefly: ignore[bad-index]
+                                    _eval_arithmetic(node.right))  # pyrefly: ignore[bad-argument-count]
   elif isinstance(node, ast.UnaryOp):  # <operator> <operand> e.g., -1
-    return operators[type(node.op)](_eval_arithmetic(node.operand))
+    return operators[type(node.op)](_eval_arithmetic(node.operand))  # pyrefly: ignore[bad-argument-count, bad-index, no-matching-overload]
   else:
     raise TypeError(node)
