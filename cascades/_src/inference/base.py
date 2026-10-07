@@ -146,5 +146,5 @@ class SampledModel(handlers.BaseModel):
                       n: int = 1):
     """Sample `n` tracers in parallel."""
     seeds = jax.random.split(jax.random.PRNGKey(seed), n)
-    tracers = [self.sample(seed=seed, pool=pool) for seed in seeds]
+    tracers = [self.sample(seed=seed, pool=pool) for seed in seeds]  # pyrefly: ignore[bad-argument-type]
     return tracers

@@ -62,7 +62,7 @@ class ForwardSampling(base.Inferencer):
       rng, subrng = jax.random.split(rng)
       model = self._model(*self._args, **self._kwargs)
       tracer = interpreter.Interpreter(
-          model, seed=subrng, inference_hook=ForwardSamplingHook())
+          model, seed=subrng, inference_hook=ForwardSamplingHook())  # pyrefly: ignore[bad-argument-type]
       tracer.run()
       self.record_sample(samples, tracer, sample_idx=sample_idx)
     return samples

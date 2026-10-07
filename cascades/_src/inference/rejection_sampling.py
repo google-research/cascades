@@ -120,7 +120,7 @@ class RejectionSampling(base.Inferencer):
         model = self._model(*self._args, **self._kwargs)
         tracer = interpreter.Interpreter(
             model,
-            seed=subrng,
+            seed=subrng,  # pyrefly: ignore[bad-argument-type]
             inference_hook=RejectionSamplingHook(self._observed))
         tracer.run()
         success = not math.isinf(tracer.stats.likelihood_observed)

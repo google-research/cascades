@@ -94,7 +94,7 @@ class LikelihoodWeighting(base.Inferencer):
       model = self._model(*self._args, **self._kwargs)
       tracer = interpreter.Interpreter(
           model,
-          seed=subrng,
+          seed=subrng,  # pyrefly: ignore[bad-argument-type]
           inference_hook=LikelihoodWeightingHook(self._observed))
       tracer.run()
       self.record_sample(samples, tracer)
