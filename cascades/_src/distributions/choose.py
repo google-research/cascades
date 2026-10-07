@@ -34,13 +34,17 @@ def _sample_log_probs(rng, log_probs, k=None):
 
 @dataclasses.dataclass(frozen=True, eq=True)
 class Choose(base.Distribution):
-  """Choose k of n options. Uses gumbel top-k trick."""
+  """Choose an ordered sample of k options uniformly without replacement."""
   k: int = 1
   options: Union[Tuple[Any], List[Any]] = tuple()
 
   def sample(self, rng) -> base.RandomSample:
     rng = base.get_rng(rng)
     n = len(self.options)
+    if not 0 <= self.k <= n:
+      raise ValueError(f'k must be between 0 and {n}, got {self.k}')
+    if self.k == 0:
+      return base.RandomSample(value=[], log_p=0.0)
 
     log_p = jnp.log(1.0 / n)
     log_probs = jnp.full((n,), fill_value=log_p)
@@ -49,5 +53,7 @@ class Choose(base.Distribution):
     chosen = []
     for idx in chosen_idxs:
       chosen.append(self.options[idx])
-    return_value = base.RandomSample(value=chosen, log_p=log_p * self.k)
+    # Each draw has one fewer available option than the previous draw.
+    sample_log_p = -jnp.log(jnp.arange(n - self.k + 1, n + 1)).sum()
+    return_value = base.RandomSample(value=chosen, log_p=sample_log_p)
     return return_value
