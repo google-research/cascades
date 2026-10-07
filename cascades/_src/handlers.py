@@ -121,7 +121,7 @@ def forward_sample(fn, seed, *args, **kwargs):
   gen_fn = lambda: fn(*args, **kwargs)
   # TODO(ddohan): Add in ParamHandler
   handler_fn = compose_handlers([Record, StopOnReject, Sampler, Observer])
-  forward_sample_handler: Record = handler_fn(Seed(seed=seed, gen_fn=gen_fn))  # pytype: disable=annotation-type-mismatch
+  forward_sample_handler: Record = handler_fn(Seed(seed=seed, gen_fn=gen_fn))
   result_with_metadata = forward_sample_handler.run_with_intermediates(
       verbose=False)
   result_with_metadata['observed_likelihood'] = (

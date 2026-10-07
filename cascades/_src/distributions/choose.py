@@ -36,7 +36,7 @@ def _sample_log_probs(rng, log_probs, k=None):
 class Choose(base.Distribution):
   """Choose k of n options. Uses gumbel top-k trick."""
   k: int = 1
-  options: Union[Tuple[Any], List[Any]] = tuple()  # pytype: disable=annotation-type-mismatch
+  options: Union[Tuple[Any], List[Any]] = tuple()
 
   def sample(self, rng) -> base.RandomSample:
     rng = base.get_rng(rng)

@@ -237,7 +237,7 @@ class Constant(Distribution):
 @dataclasses.dataclass(frozen=True, eq=True)
 class UniformCategorical(Distribution):
   """Return a random choice from the distribution."""
-  options: Tuple[Any] = tuple()  # pytype: disable=annotation-type-mismatch
+  options: Tuple[Any] = tuple()
 
   def sample(self, rng=None) -> RandomSample:
     idx = jax.random.randint(rng, (), 0, len(self.options))  # pyrefly: ignore[bad-argument-type]
@@ -317,5 +317,5 @@ class Lambda(Distribution):
     value = self.fn(*args, **kwargs)
     return RandomSample(value=value, log_p=0.0)
 
-  def score(self):  # pytype: disable=signature-mismatch  # overriding-parameter-count-checks
+  def score(self):  # pyrefly: ignore[bad-override]
     raise NotImplementedError('Scoring from Lambda is not available.')
