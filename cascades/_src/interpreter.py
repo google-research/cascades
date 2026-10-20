@@ -259,7 +259,7 @@ class Interpreter(handlers.EffectHandler):
               fn=effect.fn, *effect.args, **effect.kwargs)  # pyrefly: ignore[bad-unpacking, not-iterable]
           effect.value = random_sample.value
           effect.log_p = random_sample.log_p  # pyrefly: ignore[missing-attribute]
-        self._param_store[effect.name] = effect.value
+        self._param_store[effect.name] = effect.value  # pyrefly: ignore[unsupported-operation]
     elif isinstance(effect, handlers.Sample):
       if self._inference_hook:
         effect = self._inference_hook.handle_sample(effect, subrng, self._stats)
